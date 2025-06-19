@@ -46,6 +46,11 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Enhanced focus ring variables */
+    --focus-ring-width: 3px;
+    --focus-ring-offset: 2px;
+    --focus-ring-color: 213 94% 68%;
   }
 
   .dark {
@@ -85,6 +90,8 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    --focus-ring-color: 213 94% 78%;
   }
 }
 
@@ -120,6 +127,14 @@
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+    
+    /* Disable problematic animations */
+    .animate-spin,
+    .animate-bounce,
+    .animate-pulse,
+    .animate-glow {
+      animation: none !important;
+    }
   }
 
   /* High contrast mode support */
@@ -127,33 +142,107 @@
     :root {
       --border: 0 0% 20%;
       --ring: 213 94% 50%;
+      --focus-ring-width: 4px;
+    }
+    
+    /* Enhanced contrast for high contrast mode */
+    .bg-gradient-to-br {
+      background: hsl(var(--background)) !important;
+    }
+    
+    button, input, textarea {
+      border-width: 2px !important;
     }
   }
 
-  /* Focus indicators with cultural sensitivity */
+  /* Enhanced focus indicators with cultural sensitivity */
   :focus-visible {
-    outline: 2px solid hsl(var(--ring));
-    outline-offset: 2px;
+    outline: var(--focus-ring-width) solid hsl(var(--focus-ring-color));
+    outline-offset: var(--focus-ring-offset);
     border-radius: 4px;
+    box-shadow: 0 0 0 1px hsl(var(--background)), 0 0 0 calc(var(--focus-ring-width) + 1px) hsl(var(--focus-ring-color));
+  }
+
+  /* Skip link for keyboard navigation */
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    padding: 8px;
+    text-decoration: none;
+    border-radius: 4px;
+    z-index: 100;
+    transition: top 0.2s ease;
+  }
+
+  .skip-link:focus {
+    top: 6px;
+  }
+
+  /* Enhanced button focus states */
+  button:focus-visible,
+  [role="button"]:focus-visible {
+    transform: scale(1.02);
+    transition: transform 0.1s ease;
+  }
+
+  /* Touch device optimizations */
+  @media (hover: none) and (pointer: coarse) {
+    /* Larger touch targets */
+    button, [role="button"], input, textarea {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    
+    /* Remove hover effects on touch devices */
+    .hover\:scale-105:hover {
+      transform: none;
+    }
+    
+    /* Enhanced tap feedback */
+    button:active, [role="button"]:active {
+      transform: scale(0.98);
+      transition: transform 0.1s ease;
+    }
   }
 }
 
 @layer components {
   /* Enhanced micro-interaction utilities */
   .micro-hover {
-    @apply transition-all duration-micro ease-out hover:scale-[1.02] hover:shadow-sm;
+    @apply transition-all duration-micro ease-out;
+  }
+  
+  @media (prefers-reduced-motion: no-preference) {
+    .micro-hover {
+      @apply hover:scale-[1.02] hover:shadow-sm;
+    }
   }
 
   .interactive-scale {
-    @apply transition-transform duration-fast ease-out hover:scale-105 active:scale-95;
+    @apply transition-transform duration-fast ease-out;
+  }
+  
+  @media (prefers-reduced-motion: no-preference) {
+    .interactive-scale {
+      @apply hover:scale-105 active:scale-95;
+    }
   }
 
   .smooth-focus {
-    @apply transition-all duration-fast focus:ring-2 focus:ring-ring focus:ring-offset-2;
+    @apply transition-all duration-fast;
   }
 
   .gentle-glow {
-    @apply transition-shadow duration-smooth hover:shadow-lg hover:shadow-primary/20;
+    @apply transition-shadow duration-smooth;
+  }
+  
+  @media (prefers-reduced-motion: no-preference) {
+    .gentle-glow {
+      @apply hover:shadow-lg hover:shadow-primary/20;
+    }
   }
 
   /* Staggered animation utilities */
@@ -177,11 +266,49 @@
   .trust-primary {
     @apply bg-semantic-trust-500 hover:bg-semantic-trust-600 text-white;
   }
+
+  /* Enhanced accessibility utilities */
+  .sr-only-focusable {
+    @apply sr-only;
+  }
+  
+  .sr-only-focusable:focus {
+    @apply not-sr-only absolute z-50 p-2 bg-background border rounded;
+  }
+
+  /* Responsive text sizing */
+  .text-responsive {
+    font-size: clamp(0.875rem, 2.5vw, 1rem);
+  }
+
+  .text-responsive-lg {
+    font-size: clamp(1.125rem, 3vw, 1.25rem);
+  }
+
+  .text-responsive-xl {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+  }
+
+  /* Enhanced mobile touch targets */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+  }
+
+  /* Gesture-friendly spacing */
+  .gesture-spacing {
+    @apply p-4 m-2;
+  }
+  
+  @media (max-width: 640px) {
+    .gesture-spacing {
+      @apply p-6 m-3;
+    }
+  }
 }
 
 /* Custom scrollbar for language list with enhanced styling */
 .language-scroll::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 .language-scroll::-webkit-scrollbar-track {
@@ -190,7 +317,7 @@
 
 .language-scroll::-webkit-scrollbar-thumb {
   background: hsl(var(--muted-foreground) / 0.3);
-  border-radius: 3px;
+  border-radius: 4px;
   transition: background-color 0.2s ease;
 }
 
@@ -201,11 +328,11 @@
 /* Enhanced button animations */
 @layer utilities {
   .btn-primary {
-    @apply trust-primary micro-hover smooth-focus rounded-md px-4 py-2 font-medium;
+    @apply trust-primary micro-hover smooth-focus rounded-md px-4 py-2 font-medium touch-target;
   }
 
   .btn-ghost {
-    @apply interactive-scale smooth-focus bg-transparent hover:bg-semantic-neutral-100 text-semantic-neutral-700 rounded-md px-3 py-2;
+    @apply interactive-scale smooth-focus bg-transparent hover:bg-semantic-neutral-100 text-semantic-neutral-700 rounded-md px-3 py-2 touch-target;
   }
 
   /* Animation delay utilities for staggered effects */
@@ -214,4 +341,57 @@
   .delay-100 { animation-delay: 100ms; }
   .delay-150 { animation-delay: 150ms; }
   .delay-200 { animation-delay: 200ms; }
+
+  /* Responsive spacing utilities */
+  .space-y-responsive > :not([hidden]) ~ :not([hidden]) {
+    margin-top: clamp(1rem, 2vw, 1.5rem);
+  }
+
+  .gap-responsive {
+    gap: clamp(1rem, 2vw, 1.5rem);
+  }
+
+  /* Enhanced focus utilities */
+  .focus-enhanced:focus-visible {
+    @apply ring-4 ring-primary/20 ring-offset-2 ring-offset-background;
+  }
+}
+
+/* Responsive breakpoint utilities */
+@media (max-width: 640px) {
+  .mobile-full {
+    @apply w-full;
+  }
+  
+  .mobile-stack {
+    @apply flex-col;
+  }
+  
+  .mobile-center {
+    @apply text-center;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .tablet-grid {
+    @apply grid-cols-2;
+  }
+}
+
+@media (min-width: 1025px) {
+  .desktop-grid {
+    @apply grid-cols-3;
+  }
+}
+
+/* Print styles for accessibility */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  * {
+    background: white !important;
+    color: black !important;
+  }
 }

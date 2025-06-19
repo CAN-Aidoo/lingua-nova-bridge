@@ -50,6 +50,13 @@ const TextInputArea: React.FC<TextInputAreaProps> = ({
     return 'text-semantic-neutral-400';
   };
 
+  const getCharCountMessage = () => {
+    const percentage = (charCount / 5000) * 100;
+    if (percentage >= 90) return 'Character limit almost reached';
+    if (percentage >= 75) return 'Approaching character limit';
+    return 'Character count';
+  };
+
   return (
     <div className="relative group">
       <Textarea
@@ -59,7 +66,7 @@ const TextInputArea: React.FC<TextInputAreaProps> = ({
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         placeholder={placeholder}
-        className={`min-h-[200px] text-base leading-relaxed resize-none transition-all duration-smooth ${
+        className={`min-h-[200px] text-base leading-relaxed resize-none transition-all duration-smooth focus-enhanced ${
           isRTL ? 'text-right' : 'text-left'
         } ${
           isListening 
@@ -73,12 +80,20 @@ const TextInputArea: React.FC<TextInputAreaProps> = ({
         dir={textDirection}
         lang={language.code === 'auto' ? undefined : language.code}
         maxLength={5000}
+        aria-label={`Text input for ${language.name}`}
+        aria-describedby="char-count-status listening-status"
+        aria-live={isListening ? 'polite' : undefined}
       />
       
       {/* Enhanced Listening Indicator */}
       {isListening && (
-        <div className="absolute top-3 right-3 flex items-center space-x-2 animate-fade-in-down">
-          <div className="flex space-x-1">
+        <div 
+          className="absolute top-3 right-3 flex items-center space-x-2 animate-fade-in-down"
+          id="listening-status"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="flex space-x-1" aria-hidden="true">
             <div className="w-2 h-2 bg-semantic-error-500 rounded-full animate-bounce-subtle"></div>
             <div className="w-2 h-2 bg-semantic-error-500 rounded-full animate-bounce-subtle delay-100"></div>
             <div className="w-2 h-2 bg-semantic-error-500 rounded-full animate-bounce-subtle delay-200"></div>
@@ -89,8 +104,14 @@ const TextInputArea: React.FC<TextInputAreaProps> = ({
         </div>
       )}
       
-      {/* Enhanced Character Count with color coding */}
-      <div className={`absolute bottom-3 right-3 text-xs font-medium transition-colors duration-fast ${getCharCountColor()}`}>
+      {/* Enhanced Character Count with color coding and accessibility */}
+      <div 
+        className={`absolute bottom-3 right-3 text-xs font-medium transition-colors duration-fast ${getCharCountColor()}`}
+        id="char-count-status"
+        role="status"
+        aria-live="polite"
+        aria-label={getCharCountMessage()}
+      >
         <span className={charCount > 4500 ? 'animate-bounce-subtle' : ''}>{charCount}</span>
         <span className="text-semantic-neutral-300"> / 5000</span>
       </div>
@@ -98,7 +119,13 @@ const TextInputArea: React.FC<TextInputAreaProps> = ({
       {/* Focus indicator line */}
       <div className={`absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-semantic-trust-500 to-accent transition-all duration-smooth ${
         isFocused ? 'w-full opacity-100' : 'w-0 opacity-0'
-      }`} />
+      }`} aria-hidden="true" />
+
+      {/* Screen reader only status updates */}
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {isListening && "Voice input is active, speak now"}
+        {charCount > 4500 && `Warning: ${5000 - charCount} characters remaining`}
+      </div>
     </div>
   );
 };

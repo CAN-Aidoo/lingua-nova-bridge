@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -79,12 +78,17 @@ const TranslatorInterface = () => {
   }, [inputText, sourceLanguage, targetLanguage]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-responsive">
+      {/* Skip link for keyboard navigation */}
+      <a href="#translation-content" className="skip-link">
+        Skip to translation interface
+      </a>
+
       {/* Language Selection Header */}
-      <Card className="p-6">
-        <div className="flex flex-col md:flex-row items-center gap-4">
-          <div className="flex-1 w-full md:w-auto">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+      <Card className="p-6 gesture-spacing">
+        <div className="flex flex-col md:flex-row items-center gap-responsive mobile-stack">
+          <div className="flex-1 w-full md:w-auto mobile-full">
+            <label className="block text-sm font-medium text-gray-700 mb-2" id="source-lang-label">
               From
             </label>
             <LanguageSelector
@@ -94,20 +98,20 @@ const TranslatorInterface = () => {
             />
           </div>
           
-          <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center mobile-center">
             <Button
               variant="ghost"
               size="sm"
               onClick={swapLanguages}
-              className="rounded-full p-2 hover:bg-gray-100 transition-colors"
-              aria-label="Swap languages"
+              className="rounded-full touch-target hover:bg-gray-100 transition-colors focus-enhanced"
+              aria-label="Swap source and target languages"
             >
-              <ArrowRight className="h-5 w-5 transform rotate-90 md:rotate-0" />
+              <ArrowRight className="h-5 w-5 transform rotate-90 md:rotate-0" aria-hidden="true" />
             </Button>
           </div>
           
-          <div className="flex-1 w-full md:w-auto">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="flex-1 w-full md:w-auto mobile-full">
+            <label className="block text-sm font-medium text-gray-700 mb-2" id="target-lang-label">
               To
             </label>
             <LanguageSelector
@@ -120,12 +124,15 @@ const TranslatorInterface = () => {
       </Card>
 
       {/* Translation Areas */}
-      <div className="grid md:grid-cols-2 gap-6">
+      <div 
+        className="grid md:grid-cols-2 gap-responsive tablet-grid desktop-grid"
+        id="translation-content"
+      >
         {/* Input Area */}
-        <Card className="p-6">
+        <Card className="p-6 gesture-spacing">
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">
+            <div className="flex items-center justify-between mobile-stack mobile-center">
+              <h3 className="text-responsive-lg font-semibold text-gray-900">
                 {sourceLanguage.name}
               </h3>
               <AudioControls
@@ -146,10 +153,10 @@ const TranslatorInterface = () => {
         </Card>
 
         {/* Output Area */}
-        <Card className="p-6">
+        <Card className="p-6 gesture-spacing">
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">
+            <div className="flex items-center justify-between mobile-stack mobile-center">
+              <h3 className="text-responsive-lg font-semibold text-gray-900">
                 {targetLanguage.name}
               </h3>
               <AudioControls
@@ -168,22 +175,29 @@ const TranslatorInterface = () => {
       </div>
 
       {/* Manual Translation Button */}
-      <div className="text-center">
+      <div className="text-center mobile-center">
         <Button
           onClick={handleTranslate}
           disabled={!inputText.trim() || isTranslating}
           size="lg"
-          className="bg-gradient-to-r from-ocean-blue-500 to-teal-500 hover:from-ocean-blue-600 hover:to-teal-600 text-white px-8 py-3"
+          className="bg-gradient-to-r from-ocean-blue-500 to-teal-500 hover:from-ocean-blue-600 hover:to-teal-600 text-white px-8 py-3 touch-target focus-enhanced"
+          aria-describedby="translate-button-desc"
         >
           {isTranslating ? (
             <>
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+              <div 
+                className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" 
+                aria-hidden="true"
+              ></div>
               Translating...
             </>
           ) : (
             'Translate'
           )}
         </Button>
+        <div id="translate-button-desc" className="sr-only">
+          Click to manually translate the entered text
+        </div>
       </div>
     </div>
   );
