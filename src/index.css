@@ -3,7 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. */
+/* Enhanced design system with semantic color tokens and cultural considerations */
 
 @layer base {
   :root {
@@ -16,7 +16,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 197 71% 52%;
+    /* Enhanced semantic color tokens */
+    --primary: 213 94% 68%; /* Trust blue */
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -25,7 +26,7 @@
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 180 62% 55%;
+    --accent: 180 62% 55%; /* Teal accent */
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
@@ -33,7 +34,7 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 197 71% 52%;
+    --ring: 213 94% 68%;
 
     --radius: 0.5rem;
 
@@ -57,7 +58,7 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 197 71% 52%;
+    --primary: 213 94% 68%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -74,7 +75,7 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 197 71% 52%;
+    --ring: 213 94% 68%;
     
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -111,7 +112,7 @@
     line-height: 1.6;
   }
 
-  /* Accessibility improvements */
+  /* Enhanced accessibility improvements */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
@@ -125,12 +126,60 @@
   @media (prefers-contrast: high) {
     :root {
       --border: 0 0% 20%;
-      --ring: 197 71% 40%;
+      --ring: 213 94% 50%;
     }
+  }
+
+  /* Focus indicators with cultural sensitivity */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 }
 
-/* Custom scrollbar for language list */
+@layer components {
+  /* Enhanced micro-interaction utilities */
+  .micro-hover {
+    @apply transition-all duration-micro ease-out hover:scale-[1.02] hover:shadow-sm;
+  }
+
+  .interactive-scale {
+    @apply transition-transform duration-fast ease-out hover:scale-105 active:scale-95;
+  }
+
+  .smooth-focus {
+    @apply transition-all duration-fast focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  }
+
+  .gentle-glow {
+    @apply transition-shadow duration-smooth hover:shadow-lg hover:shadow-primary/20;
+  }
+
+  /* Staggered animation utilities */
+  .stagger-container > * {
+    animation-delay: calc(var(--stagger-delay, 0) * 50ms);
+  }
+
+  /* Cultural color adaptations */
+  .cultural-neutral {
+    @apply bg-semantic-neutral-50 border-semantic-neutral-200 text-semantic-neutral-800;
+  }
+
+  .success-state {
+    @apply bg-semantic-success-50 border-semantic-success-200 text-semantic-success-800;
+  }
+
+  .error-state {
+    @apply bg-semantic-error-50 border-semantic-error-200 text-semantic-error-800;
+  }
+
+  .trust-primary {
+    @apply bg-semantic-trust-500 hover:bg-semantic-trust-600 text-white;
+  }
+}
+
+/* Custom scrollbar for language list with enhanced styling */
 .language-scroll::-webkit-scrollbar {
   width: 6px;
 }
@@ -140,10 +189,29 @@
 }
 
 .language-scroll::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
+  background: hsl(var(--muted-foreground) / 0.3);
   border-radius: 3px;
+  transition: background-color 0.2s ease;
 }
 
 .language-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.3);
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Enhanced button animations */
+@layer utilities {
+  .btn-primary {
+    @apply trust-primary micro-hover smooth-focus rounded-md px-4 py-2 font-medium;
+  }
+
+  .btn-ghost {
+    @apply interactive-scale smooth-focus bg-transparent hover:bg-semantic-neutral-100 text-semantic-neutral-700 rounded-md px-3 py-2;
+  }
+
+  /* Animation delay utilities for staggered effects */
+  .delay-0 { animation-delay: 0ms; }
+  .delay-50 { animation-delay: 50ms; }
+  .delay-100 { animation-delay: 100ms; }
+  .delay-150 { animation-delay: 150ms; }
+  .delay-200 { animation-delay: 200ms; }
 }
