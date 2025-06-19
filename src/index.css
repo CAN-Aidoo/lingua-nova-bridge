@@ -1,9 +1,8 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Enhanced design system with semantic color tokens and cultural considerations */
+/* LangVoice Brand Design System */
 
 @layer base {
   :root {
@@ -16,17 +15,17 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    /* Enhanced semantic color tokens */
-    --primary: 213 94% 68%; /* Trust blue */
+    /* Brand-inspired color tokens */
+    --primary: 217 91% 60%; /* Electric blue */
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 96.1%;
+    --secondary: 46 87% 65%; /* Highlighter yellow */
     --secondary-foreground: 222.2 47.4% 11.2%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 180 62% 55%; /* Teal accent */
+    --accent: 316 73% 69%; /* Punchy magenta */
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
@@ -34,9 +33,9 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 213 94% 68%;
+    --ring: 217 91% 60%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem; /* Slightly more rounded for brand personality */
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -45,12 +44,12 @@
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 217 91% 60%;
 
     /* Enhanced focus ring variables */
     --focus-ring-width: 3px;
-    --focus-ring-offset: 2px;
-    --focus-ring-color: 213 94% 68%;
+    --focus-ring-offset: 3px;
+    --focus-ring-color: 217 91% 60%;
   }
 
   .dark {
@@ -63,16 +62,16 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 213 94% 68%;
+    --primary: 217 91% 70%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 46 87% 55%;
     --secondary-foreground: 210 40% 98%;
 
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 180 62% 55%;
+    --accent: 316 73% 59%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
@@ -80,7 +79,7 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 213 94% 68%;
+    --ring: 217 91% 70%;
     
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -89,9 +88,9 @@
     --sidebar-accent: 240 3.7% 15.9%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 217 91% 70%;
 
-    --focus-ring-color: 213 94% 78%;
+    --focus-ring-color: 217 91% 80%;
   }
 }
 
@@ -102,6 +101,28 @@
 
   body {
     @apply bg-background text-foreground font-sans;
+  }
+
+  /* Brand typography enhancements */
+  .brand-heading {
+    @apply font-brand font-bold text-transparent bg-clip-text;
+    background: linear-gradient(135deg, #3b82f6, #ec4899, #facc15);
+  }
+
+  .brand-text-electric {
+    @apply text-electric-blue-500;
+  }
+
+  .brand-text-yellow {
+    @apply text-highlighter-yellow-400;
+  }
+
+  .brand-text-magenta {
+    @apply text-punchy-magenta-500;
+  }
+
+  .brand-text-lilac {
+    @apply text-soft-lilac-500;
   }
 
   /* Support for multilingual text rendering */
@@ -210,6 +231,41 @@
 }
 
 @layer components {
+  /* Brand-inspired component utilities */
+  .brand-card {
+    @apply bg-white rounded-xl shadow-xl border-2 border-transparent;
+    background: linear-gradient(white, white) padding-box,
+                linear-gradient(135deg, #3b82f6, #ec4899, #facc15) border-box;
+  }
+
+  .brand-button-primary {
+    @apply bg-gradient-to-r from-electric-blue-500 to-punchy-magenta-500 hover:from-electric-blue-600 hover:to-punchy-magenta-600 text-white font-semibold rounded-lg px-6 py-3 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl;
+  }
+
+  .brand-button-secondary {
+    @apply bg-gradient-to-r from-highlighter-yellow-400 to-soft-lilac-500 hover:from-highlighter-yellow-500 hover:to-soft-lilac-600 text-gray-900 font-semibold rounded-lg px-6 py-3 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl;
+  }
+
+  .playful-hover {
+    @apply transition-all duration-300 hover:animate-playful-scale;
+  }
+
+  .brand-gradient-bg {
+    background: linear-gradient(135deg, 
+      #3b82f6 0%, 
+      #ec4899 25%, 
+      #facc15 50%, 
+      #a855f7 75%, 
+      #3b82f6 100%
+    );
+    background-size: 400% 400%;
+    animation: color-shift 8s ease-in-out infinite;
+  }
+
+  .squiggly-element {
+    @apply animate-squiggle;
+  }
+
   /* Enhanced micro-interaction utilities */
   .micro-hover {
     @apply transition-all duration-micro ease-out;
@@ -304,6 +360,52 @@
       @apply p-6 m-3;
     }
   }
+}
+
+/* Brand-specific decorative elements */
+.brand-squiggle::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(45deg, #facc15, #ec4899);
+  border-radius: 50% 20% 50% 20%;
+  animation: squiggle 3s ease-in-out infinite;
+}
+
+.brand-accent-dot::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: -5px;
+  width: 12px;
+  height: 12px;
+  background: #a855f7;
+  border-radius: 50%;
+  animation: brand-bounce 2s ease-in-out infinite;
+}
+
+/* Enhanced scrollbar with brand colors */
+.brand-scroll::-webkit-scrollbar {
+  width: 12px;
+}
+
+.brand-scroll::-webkit-scrollbar-track {
+  background: linear-gradient(90deg, #f8fafc, #f1f5f9);
+  border-radius: 6px;
+}
+
+.brand-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #3b82f6, #ec4899);
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.brand-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, #2563eb, #db2777);
+  transform: scale(1.1);
 }
 
 /* Custom scrollbar for language list with enhanced styling */

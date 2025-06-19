@@ -78,17 +78,21 @@ const TranslatorInterface = () => {
   }, [inputText, sourceLanguage, targetLanguage]);
 
   return (
-    <div className="space-y-responsive">
+    <div className="space-y-8">
       {/* Skip link for keyboard navigation */}
       <a href="#translation-content" className="skip-link">
         Skip to translation interface
       </a>
 
       {/* Language Selection Header */}
-      <Card className="p-6 gesture-spacing">
-        <div className="flex flex-col md:flex-row items-center gap-responsive mobile-stack">
-          <div className="flex-1 w-full md:w-auto mobile-full">
-            <label className="block text-sm font-medium text-gray-700 mb-2" id="source-lang-label">
+      <div className="brand-card p-8 relative overflow-hidden">
+        {/* Decorative background elements */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-highlighter-yellow-400/20 to-punchy-magenta-500/20 rounded-full -translate-y-16 translate-x-16"></div>
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-electric-blue-500/20 to-soft-lilac-500/20 rounded-full translate-y-12 -translate-x-12"></div>
+        
+        <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
+          <div className="flex-1 w-full md:w-auto">
+            <label className="block text-lg font-brand font-semibold text-gray-800 mb-3" id="source-lang-label">
               From
             </label>
             <LanguageSelector
@@ -98,20 +102,18 @@ const TranslatorInterface = () => {
             />
           </div>
           
-          <div className="flex items-center justify-center mobile-center">
-            <Button
-              variant="ghost"
-              size="sm"
+          <div className="flex items-center justify-center">
+            <button
               onClick={swapLanguages}
-              className="rounded-full touch-target hover:bg-gray-100 transition-colors focus-enhanced"
+              className="w-14 h-14 rounded-full bg-gradient-to-r from-electric-blue-500 to-punchy-magenta-500 text-white hover:from-electric-blue-600 hover:to-punchy-magenta-600 transition-all duration-300 transform hover:scale-110 hover:rotate-180 shadow-lg playful-hover"
               aria-label="Swap source and target languages"
             >
-              <ArrowRight className="h-5 w-5 transform rotate-90 md:rotate-0" aria-hidden="true" />
-            </Button>
+              <ArrowRight className="h-6 w-6 mx-auto transform rotate-90 md:rotate-0" aria-hidden="true" />
+            </button>
           </div>
           
-          <div className="flex-1 w-full md:w-auto mobile-full">
-            <label className="block text-sm font-medium text-gray-700 mb-2" id="target-lang-label">
+          <div className="flex-1 w-full md:w-auto">
+            <label className="block text-lg font-brand font-semibold text-gray-800 mb-3" id="target-lang-label">
               To
             </label>
             <LanguageSelector
@@ -121,18 +123,18 @@ const TranslatorInterface = () => {
             />
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* Translation Areas */}
       <div 
-        className="grid md:grid-cols-2 gap-responsive tablet-grid desktop-grid"
+        className="grid md:grid-cols-2 gap-8"
         id="translation-content"
       >
         {/* Input Area */}
-        <Card className="p-6 gesture-spacing">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between mobile-stack mobile-center">
-              <h3 className="text-responsive-lg font-semibold text-gray-900">
+        <div className="brand-card p-8 relative brand-squiggle">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-2xl font-brand font-bold brand-text-electric">
                 {sourceLanguage.name}
               </h3>
               <AudioControls
@@ -150,13 +152,13 @@ const TranslatorInterface = () => {
               isListening={isListening}
             />
           </div>
-        </Card>
+        </div>
 
         {/* Output Area */}
-        <Card className="p-6 gesture-spacing">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between mobile-stack mobile-center">
-              <h3 className="text-responsive-lg font-semibold text-gray-900">
+        <div className="brand-card p-8 relative brand-accent-dot">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-2xl font-brand font-bold brand-text-magenta">
                 {targetLanguage.name}
               </h3>
               <AudioControls
@@ -171,30 +173,32 @@ const TranslatorInterface = () => {
               isTranslating={isTranslating}
             />
           </div>
-        </Card>
+        </div>
       </div>
 
       {/* Manual Translation Button */}
-      <div className="text-center mobile-center">
-        <Button
+      <div className="text-center">
+        <button
           onClick={handleTranslate}
           disabled={!inputText.trim() || isTranslating}
-          size="lg"
-          className="bg-gradient-to-r from-ocean-blue-500 to-teal-500 hover:from-ocean-blue-600 hover:to-teal-600 text-white px-8 py-3 touch-target focus-enhanced"
+          className="brand-button-primary text-xl px-12 py-4 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
           aria-describedby="translate-button-desc"
         >
-          {isTranslating ? (
-            <>
-              <div 
-                className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" 
-                aria-hidden="true"
-              ></div>
-              Translating...
-            </>
-          ) : (
-            'Translate'
-          )}
-        </Button>
+          <div className="absolute inset-0 bg-gradient-to-r from-highlighter-yellow-400/20 to-soft-lilac-500/20 transform -skew-x-12 translate-x-full group-hover:translate-x-0 transition-transform duration-700"></div>
+          <span className="relative z-10 flex items-center justify-center">
+            {isTranslating ? (
+              <>
+                <div 
+                  className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin mr-3" 
+                  aria-hidden="true"
+                ></div>
+                Translating...
+              </>
+            ) : (
+              'Translate Now'
+            )}
+          </span>
+        </button>
         <div id="translate-button-desc" className="sr-only">
           Click to manually translate the entered text
         </div>
