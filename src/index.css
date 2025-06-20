@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -434,7 +435,11 @@
   }
 
   .btn-ghost {
-    @apply interactive-scale smooth-focus bg-transparent hover:bg-semantic-neutral-100 text-semantic-neutral-700 rounded-md px-3 py-2 touch-target;
+    @apply interactive-scale smooth-focus bg-transparent text-muted-foreground rounded-md px-3 py-2 touch-target;
+  }
+  
+  .btn-ghost:hover {
+    @apply bg-muted text-foreground;
   }
 
   /* Animation delay utilities for staggered effects */
