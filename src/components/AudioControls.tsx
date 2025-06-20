@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -12,6 +12,10 @@ interface AudioControlsProps {
   text?: string;
   isListening?: boolean;
   onToggleListening?: () => void;
+  onAudioResult?: (audioBlob: Blob) => void;
+  onPlayAudio?: () => void;
+  isProcessing?: boolean;
+  isPlaying?: boolean;
 }
 
 const AudioControls: React.FC<AudioControlsProps> = ({
@@ -20,11 +24,64 @@ const AudioControls: React.FC<AudioControlsProps> = ({
   text,
   isListening = false,
   onToggleListening,
+  onAudioResult,
+  onPlayAudio,
+  isProcessing = false,
+  isPlaying = false,
 }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const { toast } = useToast();
+  const recordedChunks = useRef<Blob[]>([]);
 
-  const handleMicrophoneClick = () => {
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      
+      recordedChunks.current = [];
+      
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunks.current.push(event.data);
+        }
+      };
+      
+      recorder.onstop = () => {
+        const audioBlob = new Blob(recordedChunks.current, { type: 'audio/wav' });
+        if (onAudioResult) {
+          onAudioResult(audioBlob);
+        }
+        
+        // Clean up
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      recorder.start();
+      setMediaRecorder(recorder);
+      
+      toast({
+        title: "Recording started",
+        description: `Speak in ${language.name}`,
+      });
+      
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      toast({
+        title: "Microphone access denied",
+        description: "Please allow microphone access to use voice input",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+      setMediaRecorder(null);
+    }
+  };
+
+  const handleMicrophoneClick = async () => {
     if (!language.hasSTT) {
       toast({
         title: "Speech recognition not available",
@@ -34,15 +91,16 @@ const AudioControls: React.FC<AudioControlsProps> = ({
       return;
     }
 
-    if (onToggleListening) {
-      onToggleListening();
-    }
-
-    if (!isListening) {
-      toast({
-        title: "Listening started",
-        description: `Speak in ${language.name}`,
-      });
+    if (isListening) {
+      stopRecording();
+      if (onToggleListening) {
+        onToggleListening();
+      }
+    } else {
+      await startRecording();
+      if (onToggleListening) {
+        onToggleListening();
+      }
     }
   };
 
@@ -65,16 +123,9 @@ const AudioControls: React.FC<AudioControlsProps> = ({
       return;
     }
 
-    setIsPlaying(true);
-    
-    // Mock TTS playback - in real app, this would use actual TTS API
-    setTimeout(() => {
-      setIsPlaying(false);
-      toast({
-        title: "Speech completed",
-        description: `Finished speaking in ${language.name}`,
-      });
-    }, 2000);
+    if (onPlayAudio) {
+      onPlayAudio();
+    }
   };
 
   return (
@@ -87,7 +138,7 @@ const AudioControls: React.FC<AudioControlsProps> = ({
                 variant={isListening ? "default" : "ghost"}
                 size="sm"
                 onClick={handleMicrophoneClick}
-                disabled={!language.hasSTT}
+                disabled={!language.hasSTT || isProcessing}
                 className={`relative ${
                   isListening 
                     ? 'bg-red-500 hover:bg-red-600 text-white' 
@@ -97,19 +148,23 @@ const AudioControls: React.FC<AudioControlsProps> = ({
                 }`}
               >
                 {/* Microphone Icon */}
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-                  />
-                </svg>
+                {isProcessing ? (
+                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                    />
+                  </svg>
+                )}
                 
                 {/* Pulse Animation for Listening State */}
                 {isListening && (
@@ -135,7 +190,7 @@ const AudioControls: React.FC<AudioControlsProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={handleSpeakerClick}
-                disabled={!language.hasTTS || !text}
+                disabled={!language.hasTTS || !text || isPlaying}
                 className={`${
                   language.hasTTS && text 
                     ? 'hover:bg-gray-100' 
