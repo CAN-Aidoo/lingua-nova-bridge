@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,41 +10,42 @@ import AudioControls from './AudioControls';
 import { Language } from '../types/language';
 import { languages } from '../data/languages';
 import { useToast } from '../hooks/use-toast';
+import { useTranslation } from '../hooks/useTranslation';
+import { useSpeechToText } from '../hooks/useSpeechToText';
+import { useTextToSpeech } from '../hooks/useTextToSpeech';
 
 const TranslatorInterface = () => {
   const [sourceLanguage, setSourceLanguage] = useState<Language>(languages[0]); // Auto-detect
   const [targetLanguage, setTargetLanguage] = useState<Language>(languages[1]); // English
   const [inputText, setInputText] = useState('');
   const [outputText, setOutputText] = useState('');
-  const [isTranslating, setIsTranslating] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const { toast } = useToast();
+  
+  // Use our real translation services
+  const { translate, isTranslating } = useTranslation();
+  const { transcribeAudio, isTranscribing } = useSpeechToText();
+  const { speak, isSpeaking } = useTextToSpeech();
 
-  // Simulate translation with delay
+  // Handle real translation
   const handleTranslate = async () => {
-    if (!inputText.trim()) {
-      toast({
-        title: "No text to translate",
-        description: "Please enter some text to translate",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsTranslating(true);
+    const result = await translate(
+      inputText,
+      sourceLanguage.code,
+      targetLanguage.code
+    );
     
-    // Simulate API call delay
-    setTimeout(() => {
-      // Mock translation - in real app, this would call Lara Translate API
-      const mockTranslation = `[${targetLanguage.name} translation of: "${inputText}"]`;
-      setOutputText(mockTranslation);
-      setIsTranslating(false);
+    if (result) {
+      setOutputText(result.translatedText);
       
-      toast({
-        title: "Translation completed",
-        description: `Translated to ${targetLanguage.name}`,
-      });
-    }, 1500);
+      // Update detected source language if auto-detect was used
+      if (sourceLanguage.code === 'auto' && result.detectedSourceLanguage) {
+        const detectedLang = languages.find(lang => lang.code === result.detectedSourceLanguage);
+        if (detectedLang) {
+          setSourceLanguage(detectedLang);
+        }
+      }
+    }
   };
 
   const swapLanguages = () => {
@@ -142,6 +144,14 @@ const TranslatorInterface = () => {
                 onToggleListening={() => setIsListening(!isListening)}
                 language={sourceLanguage}
                 mode="input"
+                onAudioResult={(audioBlob) => {
+                  transcribeAudio(audioBlob, sourceLanguage.code).then(text => {
+                    if (text) {
+                      setInputText(text);
+                    }
+                  });
+                }}
+                isProcessing={isTranscribing}
               />
             </div>
             <TextInputArea
@@ -165,6 +175,8 @@ const TranslatorInterface = () => {
                 language={targetLanguage}
                 mode="output"
                 text={outputText}
+                onPlayAudio={() => speak(outputText, targetLanguage.code)}
+                isPlaying={isSpeaking}
               />
             </div>
             <TextOutputArea

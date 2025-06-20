@@ -9,13 +9,105 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      language_usage: {
+        Row: {
+          id: string
+          source_language: string
+          target_language: string
+          updated_at: string
+          usage_count: number | null
+        }
+        Insert: {
+          id?: string
+          source_language: string
+          target_language: string
+          updated_at?: string
+          usage_count?: number | null
+        }
+        Update: {
+          id?: string
+          source_language?: string
+          target_language?: string
+          updated_at?: string
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
+      translations: {
+        Row: {
+          created_at: string
+          id: string
+          source_language: string
+          source_text: string
+          target_language: string
+          translated_text: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          source_language: string
+          source_text: string
+          target_language: string
+          translated_text: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          source_language?: string
+          source_text?: string
+          target_language?: string
+          translated_text?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          created_at: string
+          enable_auto_translate: boolean | null
+          enable_speech_input: boolean | null
+          enable_speech_output: boolean | null
+          id: string
+          preferred_source_language: string | null
+          preferred_target_language: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enable_auto_translate?: boolean | null
+          enable_speech_input?: boolean | null
+          enable_speech_output?: boolean | null
+          id?: string
+          preferred_source_language?: string | null
+          preferred_target_language?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enable_auto_translate?: boolean | null
+          enable_speech_input?: boolean | null
+          enable_speech_output?: boolean | null
+          id?: string
+          preferred_source_language?: string | null
+          preferred_target_language?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_language_usage: {
+        Args: { src_lang: string; tgt_lang: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
