@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -124,6 +125,40 @@ const AudioControls: React.FC<AudioControlsProps> = ({
 
     if (onPlayAudio) {
       onPlayAudio();
+    }
+    // Call the speak function from the hook
+    speak(text, language.code, 's3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b046-324a1749103b/alice/manifest.json'); // Assuming this is the voiceId
+  };
+
+  const handleDownloadClick = () => {
+    if (!text) {
+      toast({
+        title: "No text to download",
+        description: "There's no text to convert to audio for download",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (audioBlob) {
+      const url = URL.createObjectURL(audioBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `lingua-nova-audio-${Date.now()}.mp3`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({
+        title: "Download started",
+        description: "Your audio file is being downloaded.",
+      });
+    } else {
+      toast({
+        title: "No audio to download",
+        description: "Please generate audio first before attempting to download.",
+        variant: "destructive",
+      });
     }
   };
 

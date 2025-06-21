@@ -28,6 +28,9 @@ export const useTextToSpeech = () => {
         },
       });
 
+      console.log('Supabase invoke raw data:', data);
+      console.log('Supabase invoke raw error:', error);
+
       if (error) {
         console.error('TTS API error:', error);
         throw error;

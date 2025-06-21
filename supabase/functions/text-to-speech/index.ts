@@ -48,13 +48,20 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         text,
-        voice_id: voiceId, // Changed to voice_id
+        voice_id: voiceId,
         output_format: 'mp3',
         quality: 'medium',
         voice_engine: 'PlayHT2.0',
       }),
     });
     
+    console.log('DEBUG: playAiResponse object:', playAiResponse);
+    
+    // Defensive check
+    if (!playAiResponse) {
+      throw new Error('PlayAI API fetch returned an undefined response object.');
+    }
+
     console.log('PlayAI response status:', playAiResponse.status)
 
     if (!playAiResponse.ok) {
