@@ -12,72 +12,106 @@ serve(async (req) => {
   }
 
   try {
-    const { text, language = 'en', voice = 'Alice' } = await req.json()
+  const { text, voiceId } = await req.json();
 
-    if (!text) {
+    console.log('Received text:', text ? text.substring(0, 50) + '...' : 'No text');
+    console.log('Received voiceId:', voiceId);
+
+    if (!text || !voiceId) {
       return new Response(
         JSON.stringify({ error: 'No text provided' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    const voiceRssApiKey = Deno.env.get('VOICERSS_API_KEY')
-    if (!voiceRssApiKey) {
+    const playAiApiKey = Deno.env.get('PLAYAI_API_KEY')
+    const playAiUserId = Deno.env.get('PLAYAI_USER_ID')
+
+    console.log('PlayAI API Key present:', !!playAiApiKey);
+    console.log('PlayAI User ID present:', !!playAiUserId);
+
+    if (!playAiApiKey || !playAiUserId) {
       return new Response(
-        JSON.stringify({ error: 'VoiceRSS API key not configured' }),
+        JSON.stringify({ error: 'PlayAI API key or User ID not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    console.log('Making VoiceRSS API call for text:', text.substring(0, 50))
+    console.log('Making PlayAI API call for text:', text.substring(0, 50))
 
-    // VoiceRSS API call
-    const voiceRssUrl = 'http://api.voicerss.org/'
-    const params = new URLSearchParams({
-      key: voiceRssApiKey,
-      src: text,
-      hl: language,
-      v: voice,
-      f: '48khz_16bit_stereo',
-      c: 'mp3',
-    })
-
-    const response = await fetch(`${voiceRssUrl}?${params}`)
+    const playAiResponse = await fetch('https://play.ht/api/v2/tts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-User-ID': playAiUserId,
+        'Authorization': `Bearer ${playAiApiKey}`,
+      },
+      body: JSON.stringify({
+        text,
+        voice_id: voiceId, // Changed to voice_id
+        output_format: 'mp3',
+        quality: 'medium',
+        voice_engine: 'PlayHT2.0',
+      }),
+    });
     
-    console.log('VoiceRSS response status:', response.status)
-    console.log('VoiceRSS response headers:', Object.fromEntries(response.headers.entries()))
+    console.log('PlayAI response status:', playAiResponse.status)
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('VoiceRSS API error:', errorText)
-      throw new Error(`VoiceRSS API error: ${response.status} - ${errorText}`)
+    if (!playAiResponse.ok) {
+      const errorText = await playAiResponse.text();
+      console.error('PlayAI API Error:', errorText);
+      throw new Error(`PlayAI API request failed with status ${playAiResponse.status}: ${errorText}`);
     }
 
     // Check if response is actually audio or an error message
-    const contentType = response.headers.get('content-type') || ''
+    const contentType = playAiResponse.headers.get('content-type') || ''
     console.log('Response content type:', contentType)
     
     if (!contentType.includes('audio') && !contentType.includes('mpeg')) {
-      const errorText = await response.text()
-      console.error('VoiceRSS returned non-audio response:', errorText)
+      const errorText = await playAiResponse.text()
+      console.error('PlayAI returned non-audio response:', errorText)
       
-      // Common VoiceRSS error messages
-      if (errorText.includes('ERROR')) {
-        throw new Error(`VoiceRSS API Error: ${errorText}`)
+      // Common PlayAI error messages
+      if (errorText.includes('error')) {
+        throw new Error(`PlayAI API Error: ${errorText}`);
       }
       
-      throw new Error('VoiceRSS returned invalid response format')
+      throw new Error('PlayAI returned invalid response format');
     }
 
-    const audioBuffer = await response.arrayBuffer()
-    console.log('Audio buffer size:', audioBuffer.byteLength)
+    const job = await playAiResponse.json();
+    const jobId = job.id;
+
+    // Poll for the result
+    let result = null;
+    while (true) {
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for 2 seconds
+      const jobResponse = await fetch(`https://api.play.ht/api/v2/tts/${jobId}`, {
+        headers: {
+          'Authorization': `Bearer ${playAiApiKey}`,
+          'X-User-ID': playAiUserId,
+          'accept': 'application/json'
+        }
+      });
+
+      result = await jobResponse.json();
+      if (result.output) {
+        break;
+      }
+    }
+
+    const audioUrl = result.output.url;
+    const audioResponse = await fetch(audioUrl);
+    const audioBuffer = await audioResponse.arrayBuffer();
+
+    console.log('Audio buffer size:', audioBuffer.byteLength);
     
     // Validate audio data size
     if (audioBuffer.byteLength < 1000) {
-      throw new Error('Audio data too small - likely an API error')
+      throw new Error('Audio data too small - likely an API error');
     }
     
-    const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)))
+    const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
 
     return new Response(
       JSON.stringify({ 
@@ -93,7 +127,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: error.message || 'Text-to-speech failed',
-        details: 'Check VoiceRSS API key and service status'
+        details: 'Check PlayAI API key and service status'
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )

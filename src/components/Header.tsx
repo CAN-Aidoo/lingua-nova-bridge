@@ -1,16 +1,51 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { History, Settings } from 'lucide-react';
 
+interface Translation {
+  id: string;
+  source_text: string;
+  translated_text: string;
+  source_language: string;
+  target_language: string;
+  created_at: string;
+}
+
 const Header = () => {
-  const [translationHistory, setTranslationHistory] = useState([
-    { id: 1, source: 'Hello world', target: 'Hola mundo', from: 'English', to: 'Spanish', timestamp: new Date().toLocaleString() },
-    { id: 2, source: 'Good morning', target: 'Buenos días', from: 'English', to: 'Spanish', timestamp: new Date().toLocaleString() },
-  ]);
+  const [translationHistory, setTranslationHistory] = useState<Translation[]>([]);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      const { data, error } = await supabase
+        .from('translations')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching translation history:', error);
+      } else {
+        setTranslationHistory(data as Translation[]);
+      }
+    };
+
+    fetchHistory();
+
+    const subscription = supabase
+      .channel('translations')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'translations' }, (payload) => {
+        setTranslationHistory((prevHistory) => [payload.new as Translation, ...prevHistory]);
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   return (
     <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b">
@@ -47,12 +82,12 @@ const Header = () => {
                       translationHistory.map((item) => (
                         <div key={item.id} className="border rounded-lg p-4 space-y-2">
                           <div className="flex justify-between items-center text-sm text-gray-500">
-                            <span>{item.from} → {item.to}</span>
-                            <span>{item.timestamp}</span>
+                            <span>{item.source_language} → {item.target_language}</span>
+                            <span>{new Date(item.created_at).toLocaleString()}</span>
                           </div>
                           <div className="space-y-1">
-                            <p className="font-medium">{item.source}</p>
-                            <p className="text-gray-600">{item.target}</p>
+                            <p className="font-medium">{item.source_text}</p>
+                            <p className="text-gray-600">{item.translated_text}</p>
                           </div>
                         </div>
                       ))
@@ -61,10 +96,22 @@ const Header = () => {
                 </ScrollArea>
               </DialogContent>
             </Dialog>
-            <Button variant="outline" size="sm" className="flex items-center space-x-2">
-              <Settings className="h-4 w-4" />
-              <span>Settings</span>
-            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="flex items-center space-x-2">
+                  <Settings className="h-4 w-4" />
+                  <span>Settings</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Settings</DialogTitle>
+                </DialogHeader>
+                <div className="py-4 text-gray-600">
+                  <p>Settings controls will be available here soon.</p>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </div>

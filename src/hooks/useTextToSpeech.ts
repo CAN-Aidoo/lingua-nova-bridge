@@ -5,16 +5,18 @@ import { useToast } from './use-toast';
 
 export const useTextToSpeech = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const { toast } = useToast();
 
   const speak = async (
     text: string,
     language: string = 'en',
-    voice: string = 'Alice'
+    voiceId: string // Changed from 'voice' to 'voiceId'
   ): Promise<void> => {
     if (!text.trim()) return;
 
     setIsSpeaking(true);
+    setAudioBlob(null); // Clear previous blob
 
     try {
       console.log('Starting TTS for text:', text, 'language:', language);
@@ -22,8 +24,7 @@ export const useTextToSpeech = () => {
       const { data, error } = await supabase.functions.invoke('text-to-speech', {
         body: {
           text,
-          language,
-          voice,
+          voiceId,
         },
       });
 
@@ -62,10 +63,11 @@ export const useTextToSpeech = () => {
         }
         
         // Create blob with correct MIME type for MP3
-        const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
-        console.log('Audio blob created, size:', audioBlob.size);
+        const newAudioBlob = new Blob([bytes], { type: 'audio/mpeg' });
+        setAudioBlob(newAudioBlob);
+        console.log('Audio blob created, size:', newAudioBlob.size);
         
-        const audioUrl = URL.createObjectURL(audioBlob);
+        const audioUrl = URL.createObjectURL(newAudioBlob);
         const audio = new Audio(audioUrl);
         
         // Set up event handlers before attempting to play
@@ -107,7 +109,7 @@ export const useTextToSpeech = () => {
         
       } catch (decodeError) {
         console.error('Error decoding base64 audio:', decodeError);
-        throw new Error('Failed to decode audio data - check VoiceRSS API response');
+        throw new Error('Failed to decode audio data - check PlayAI API response');
       }
 
     } catch (error) {
@@ -115,7 +117,7 @@ export const useTextToSpeech = () => {
       setIsSpeaking(false);
       toast({
         title: "Text-to-speech failed",
-        description: error.message || "Please check your VoiceRSS API key and try again",
+        description: error.message || "Please check your PlayAI API key and try again",
         variant: "destructive",
       });
     }
@@ -124,5 +126,6 @@ export const useTextToSpeech = () => {
   return {
     speak,
     isSpeaking,
+    audioBlob,
   };
 };
