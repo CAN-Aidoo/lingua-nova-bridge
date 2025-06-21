@@ -32,12 +32,18 @@ export const useTextToSpeech = () => {
         throw error;
       }
 
-      console.log('TTS API response received');
+      console.log('TTS API response received:', data);
 
-      // Handle the audio data from VoiceRSS
-      const audioData = data.audioData;
+      // Check if we received proper audio data
+      const audioData = data?.audioData;
       if (!audioData) {
         throw new Error('No audio data received from TTS service');
+      }
+
+      // Check if the response is an error message instead of audio data
+      if (typeof audioData === 'string' && audioData.length < 100) {
+        console.error('Possible API error response:', audioData);
+        throw new Error('Invalid audio data received - API may have returned an error');
       }
 
       // Convert base64 to Uint8Array properly
@@ -48,6 +54,13 @@ export const useTextToSpeech = () => {
           bytes[i] = binaryString.charCodeAt(i);
         }
         
+        console.log('Audio blob size will be:', bytes.length);
+        
+        // Validate audio data size
+        if (bytes.length < 1000) {
+          throw new Error('Audio data too small - likely an API error response');
+        }
+        
         // Create blob with correct MIME type for MP3
         const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
         console.log('Audio blob created, size:', audioBlob.size);
@@ -56,12 +69,16 @@ export const useTextToSpeech = () => {
         const audio = new Audio(audioUrl);
         
         // Set up event handlers before attempting to play
+        const cleanup = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+        
         audio.oncanplaythrough = () => {
           console.log('Audio can play through');
           audio.play().catch(playError => {
             console.error('Audio play error:', playError);
-            setIsSpeaking(false);
-            URL.revokeObjectURL(audioUrl);
+            cleanup();
             toast({
               title: "Playback failed",
               description: "Unable to play the audio",
@@ -72,27 +89,17 @@ export const useTextToSpeech = () => {
         
         audio.onended = () => {
           console.log('Audio playback ended');
-          setIsSpeaking(false);
-          URL.revokeObjectURL(audioUrl);
+          cleanup();
         };
         
         audio.onerror = (e) => {
           console.error('Audio error event:', e);
-          setIsSpeaking(false);
-          URL.revokeObjectURL(audioUrl);
+          cleanup();
           toast({
             title: "Audio playback failed",
-            description: "The audio format may not be supported",
+            description: "The audio format may not be supported or API returned invalid data",
             variant: "destructive",
           });
-        };
-
-        audio.onloadstart = () => {
-          console.log('Audio loading started');
-        };
-
-        audio.onloadeddata = () => {
-          console.log('Audio data loaded');
         };
 
         // Load the audio
@@ -100,7 +107,7 @@ export const useTextToSpeech = () => {
         
       } catch (decodeError) {
         console.error('Error decoding base64 audio:', decodeError);
-        throw new Error('Failed to decode audio data');
+        throw new Error('Failed to decode audio data - check VoiceRSS API response');
       }
 
     } catch (error) {
@@ -108,7 +115,7 @@ export const useTextToSpeech = () => {
       setIsSpeaking(false);
       toast({
         title: "Text-to-speech failed",
-        description: error.message || "Please try again",
+        description: error.message || "Please check your VoiceRSS API key and try again",
         variant: "destructive",
       });
     }

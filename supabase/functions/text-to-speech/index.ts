@@ -24,10 +24,12 @@ serve(async (req) => {
     const voiceRssApiKey = Deno.env.get('VOICERSS_API_KEY')
     if (!voiceRssApiKey) {
       return new Response(
-        JSON.stringify({ error: 'Text-to-speech service not configured' }),
+        JSON.stringify({ error: 'VoiceRSS API key not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    console.log('Making VoiceRSS API call for text:', text.substring(0, 50))
 
     // VoiceRSS API call
     const voiceRssUrl = 'http://api.voicerss.org/'
@@ -41,18 +43,47 @@ serve(async (req) => {
     })
 
     const response = await fetch(`${voiceRssUrl}?${params}`)
+    
+    console.log('VoiceRSS response status:', response.status)
+    console.log('VoiceRSS response headers:', Object.fromEntries(response.headers.entries()))
 
     if (!response.ok) {
-      throw new Error('Text-to-speech API error')
+      const errorText = await response.text()
+      console.error('VoiceRSS API error:', errorText)
+      throw new Error(`VoiceRSS API error: ${response.status} - ${errorText}`)
+    }
+
+    // Check if response is actually audio or an error message
+    const contentType = response.headers.get('content-type') || ''
+    console.log('Response content type:', contentType)
+    
+    if (!contentType.includes('audio') && !contentType.includes('mpeg')) {
+      const errorText = await response.text()
+      console.error('VoiceRSS returned non-audio response:', errorText)
+      
+      // Common VoiceRSS error messages
+      if (errorText.includes('ERROR')) {
+        throw new Error(`VoiceRSS API Error: ${errorText}`)
+      }
+      
+      throw new Error('VoiceRSS returned invalid response format')
     }
 
     const audioBuffer = await response.arrayBuffer()
+    console.log('Audio buffer size:', audioBuffer.byteLength)
+    
+    // Validate audio data size
+    if (audioBuffer.byteLength < 1000) {
+      throw new Error('Audio data too small - likely an API error')
+    }
+    
     const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)))
 
     return new Response(
       JSON.stringify({ 
         audioData: base64Audio,
-        contentType: 'audio/mpeg'
+        contentType: 'audio/mpeg',
+        size: audioBuffer.byteLength
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
@@ -60,7 +91,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Text-to-speech error:', error)
     return new Response(
-      JSON.stringify({ error: 'Text-to-speech failed' }),
+      JSON.stringify({ 
+        error: error.message || 'Text-to-speech failed',
+        details: 'Check VoiceRSS API key and service status'
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
