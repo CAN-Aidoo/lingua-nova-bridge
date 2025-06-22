@@ -15,28 +15,29 @@ export const useTextToSpeech = () => {
     setError(null);
     
     try {
-      // Prepare the request body
-      const requestBody = {
+      if (!text || text.trim().length === 0) {
+        throw new Error('No text provided for text-to-speech');
+      }
+
+      // Prepare the request payload
+      const payload = {
         text: text.trim(),
         languageCode: languageCode || 'en',
         voiceId: voiceId || 's3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b046-324a1749103b/alice/manifest.json'
       };
 
-      console.log('TTS: Sending request with body:', requestBody);
+      console.log('TTS: Sending request with payload:', payload);
 
-      // Use the correct Supabase function invocation method
+      // Call the Supabase edge function
       const { data, error: funcError } = await supabase.functions.invoke('text-to-speech', {
-        body: requestBody, // Don't JSON.stringify here - Supabase handles it
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        body: payload
       });
 
       console.log('TTS: Response received:', { data, funcError });
 
       if (funcError) {
         console.error('TTS: Function error:', funcError);
-        throw new Error(funcError.message || 'Text-to-speech service error');
+        throw new Error(funcError.message || `Text-to-speech service error: ${JSON.stringify(funcError)}`);
       }
 
       if (!data) {
@@ -50,20 +51,30 @@ export const useTextToSpeech = () => {
       if (data.audioUrl) {
         console.log('TTS: Playing audio from URL:', data.audioUrl);
         const audio = new Audio(data.audioUrl);
-        audio.onloadeddata = () => {
-          console.log('TTS: Audio loaded successfully');
-        };
-        audio.onerror = (e) => {
-          console.error('TTS: Audio playback error:', e);
-          throw new Error('Failed to play audio');
-        };
+        
+        await new Promise((resolve, reject) => {
+          audio.onloadeddata = () => {
+            console.log('TTS: Audio loaded successfully');
+            resolve(void 0);
+          };
+          audio.onerror = (e) => {
+            console.error('TTS: Audio load error:', e);
+            reject(new Error('Failed to load audio'));
+          };
+          audio.onended = () => {
+            console.log('TTS: Audio playback completed');
+          };
+        });
+
         await audio.play();
         
         // Create blob for download if needed
         try {
           const response = await fetch(data.audioUrl);
-          const blob = await response.blob();
-          setAudioBlob(blob);
+          if (response.ok) {
+            const blob = await response.blob();
+            setAudioBlob(blob);
+          }
         } catch (blobError) {
           console.warn('TTS: Could not create audio blob for download:', blobError);
         }
