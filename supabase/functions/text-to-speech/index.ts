@@ -12,46 +12,46 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Request Method:', req.method);
-    console.log('Request Headers:', req.headers);
+    console.log('TTS Edge Function: Request received');
+    console.log('TTS: Request Method:', req.method);
+    console.log('TTS: Request Headers:', Object.fromEntries(req.headers.entries()));
 
     const contentType = req.headers.get('content-type');
     const contentLength = req.headers.get('content-length');
 
-    if (contentLength === '0') {
-      console.error('Received request with empty body (Content-Length: 0)');
-      return new Response(JSON.stringify({ error: 'Request body is empty' }), {
+    console.log('TTS: Content-Type:', contentType);
+    console.log('TTS: Content-Length:', contentLength);
+
+    if (contentLength === '0' || contentLength === null) {
+      console.error('TTS: Received request with empty body (Content-Length: 0)');
+      return new Response(JSON.stringify({ 
+        error: 'Request body is empty. Please provide text, languageCode, and voiceId.' 
+      }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     let requestBody;
-    let rawBody;
     try {
-      rawBody = await req.text(); // Read raw body as text
-      console.log('Raw Request Body:', rawBody);
+      const rawBody = await req.text();
+      console.log('TTS: Raw Request Body:', rawBody);
 
-      if (contentType && contentType.includes('application/json')) {
-        if (rawBody) {
-          requestBody = JSON.parse(rawBody);
-        } else {
-          console.error('Received application/json with empty body.');
-          return new Response(JSON.stringify({ error: 'Empty JSON body' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-      } else {
-        console.error('Unexpected Content-Type:', contentType);
-        return new Response(JSON.stringify({ error: `Unsupported Content-Type: ${contentType}` }), {
+      if (!rawBody) {
+        console.error('TTS: Empty request body received');
+        return new Response(JSON.stringify({ error: 'Empty request body' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-    } catch (e) {
-      console.error('Failed to parse request body as JSON:', e.message, e.stack);
-      return new Response(JSON.stringify({ error: `Invalid JSON in request body: ${e.message}. Raw body: ${rawBody}` }), {
+
+      requestBody = JSON.parse(rawBody);
+      console.log('TTS: Parsed Request Body:', requestBody);
+    } catch (parseError) {
+      console.error('TTS: JSON parsing error:', parseError);
+      return new Response(JSON.stringify({ 
+        error: `Invalid JSON in request body: ${parseError.message}` 
+      }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -59,22 +59,30 @@ serve(async (req) => {
 
     const { text, languageCode, voiceId } = requestBody;
 
-    if (!text) {
-      return new Response(JSON.stringify({ error: 'Text is required' }), {
+    if (!text || text.trim().length === 0) {
+      console.error('TTS: Missing or empty text parameter');
+      return new Response(JSON.stringify({ error: 'Text parameter is required and cannot be empty' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Replace with your actual SpeechifyAI API key, ideally from environment variables
+    // Get the Speechify API key from environment
     const SPEECHIFY_API_KEY = Deno.env.get('SPEECHIFY_API_KEY');
 
     if (!SPEECHIFY_API_KEY) {
-      return new Response(JSON.stringify({ error: 'SpeechifyAI API key not configured' }), {
+      console.error('TTS: Speechify API key not configured');
+      return new Response(JSON.stringify({ error: 'Text-to-speech service not configured' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    console.log('TTS: Making request to Speechify API with:', {
+      text: text.substring(0, 50) + '...',
+      languageCode,
+      voiceId: voiceId?.substring(0, 50) + '...'
+    });
 
     const speechifyApiUrl = 'https://api.speechify.com/v1/text-to-speech/generate-audio';
 
@@ -85,30 +93,60 @@ serve(async (req) => {
         'Authorization': `Bearer ${SPEECHIFY_API_KEY}`,
       },
       body: JSON.stringify({
-        text,
-        languageCode,
-        voiceId,
+        text: text.trim(),
+        languageCode: languageCode || 'en',
+        voiceId: voiceId || 's3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b046-324a1749103b/alice/manifest.json',
       }),
     });
 
+    console.log('TTS: Speechify API response status:', response.status);
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`SpeechifyAI API error: ${response.status} - ${errorData.message || JSON.stringify(errorData)}`);
+      const errorText = await response.text();
+      console.error('TTS: Speechify API error:', response.status, errorText);
+      
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { message: errorText || 'Unknown API error' };
+      }
+      
+      throw new Error(`Speechify API error: ${response.status} - ${errorData.message || JSON.stringify(errorData)}`);
     }
 
     const data = await response.json();
+    console.log('TTS: Speechify API success response received');
+
+    if (!data.audioUrl) {
+      console.error('TTS: No audioUrl in Speechify response:', data);
+      throw new Error('No audio URL received from Speechify API');
+    }
 
     return new Response(
-      JSON.stringify({ audioUrl: data.audioUrl, debug: { text, languageCode, voiceId } }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ 
+        audioUrl: data.audioUrl,
+        debug: { 
+          text: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
+          languageCode, 
+          voiceId: voiceId?.substring(0, 50) + (voiceId && voiceId.length > 50 ? '...' : '') 
+        } 
+      }),
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     );
   } catch (error) {
-    console.error('Edge Function error:', error.message, error.stack);
+    console.error('TTS: Edge Function error:', error.message, error.stack);
     return new Response(
       JSON.stringify({
-        error: error.message || 'Edge Function encountered an error',
+        error: error.message || 'Text-to-speech service encountered an error',
       }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     );
   }
 });
