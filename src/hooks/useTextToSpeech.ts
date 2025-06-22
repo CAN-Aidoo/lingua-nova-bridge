@@ -25,7 +25,7 @@ export const useTextToSpeech = () => {
       console.log('TTS: Sending request with body:', requestBody);
 
       const { data, error: funcError } = await supabase.functions.invoke('text-to-speech', {
-        body: requestBody,
+        body: JSON.stringify(requestBody),
         headers: {
           'Content-Type': 'application/json',
         },

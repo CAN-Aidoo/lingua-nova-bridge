@@ -22,22 +22,12 @@ serve(async (req) => {
     console.log('TTS: Content-Type:', contentType);
     console.log('TTS: Content-Length:', contentLength);
 
-    if (contentLength === '0' || contentLength === null) {
-      console.error('TTS: Received request with empty body (Content-Length: 0)');
-      return new Response(JSON.stringify({ 
-        error: 'Request body is empty. Please provide text, languageCode, and voiceId.' 
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
     let requestBody;
     try {
       const rawBody = await req.text();
       console.log('TTS: Raw Request Body:', rawBody);
 
-      if (!rawBody) {
+      if (!rawBody || rawBody.trim() === '') {
         console.error('TTS: Empty request body received');
         return new Response(JSON.stringify({ error: 'Empty request body' }), {
           status: 400,
