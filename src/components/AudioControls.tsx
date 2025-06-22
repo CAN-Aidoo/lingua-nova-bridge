@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Language } from '../types/language';
 import { useToast } from '../hooks/use-toast';
+import { useTextToSpeech } from '../hooks/useTextToSpeech';
 
 interface AudioControlsProps {
   language: Language;
@@ -32,6 +33,7 @@ const AudioControls: React.FC<AudioControlsProps> = ({
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const { toast } = useToast();
   const recordedChunks = useRef<Blob[]>([]);
+  const { speak, audioBlob } = useTextToSpeech();
 
   const startRecording = async () => {
     try {
@@ -126,6 +128,7 @@ const AudioControls: React.FC<AudioControlsProps> = ({
     if (onPlayAudio) {
       onPlayAudio();
     }
+    console.log('Text being sent to speak function:', text);
     // Call the speak function from the hook
     speak(text, language.code, 's3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b046-324a1749103b/alice/manifest.json');
   };
