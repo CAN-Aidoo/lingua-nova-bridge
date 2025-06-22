@@ -127,7 +127,7 @@ const AudioControls: React.FC<AudioControlsProps> = ({
       onPlayAudio();
     }
     // Call the speak function from the hook
-    speak(text, language.code, 's3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b046-324a1749103b/alice/manifest.json'); // Assuming this is the voiceId
+    speak(text, language.code, 's3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b046-324a1749103b/alice/manifest.json');
   };
 
   const handleDownloadClick = () => {

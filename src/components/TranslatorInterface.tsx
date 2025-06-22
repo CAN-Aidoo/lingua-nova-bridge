@@ -175,7 +175,7 @@ const TranslatorInterface = () => {
                 language={targetLanguage}
                 mode="output"
                 text={outputText}
-                onPlayAudio={() => speak(outputText, targetLanguage.code)}
+                onPlayAudio={() => speak(outputText, targetLanguage.code, 's3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b046-324a1749103b/alice/manifest.json')}
                 isPlaying={isSpeaking}
               />
             </div>

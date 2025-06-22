@@ -1,142 +1,114 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-  const { text, voiceId } = await req.json();
+    console.log('Request Method:', req.method);
+    console.log('Request Headers:', req.headers);
 
-    console.log('Received text:', text ? text.substring(0, 50) + '...' : 'No text');
-    console.log('Received voiceId:', voiceId);
+    const contentType = req.headers.get('content-type');
+    const contentLength = req.headers.get('content-length');
 
-    if (!text || !voiceId) {
-      return new Response(
-        JSON.stringify({ error: 'No text provided' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    if (contentLength === '0') {
+      console.error('Received request with empty body (Content-Length: 0)');
+      return new Response(JSON.stringify({ error: 'Request body is empty' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    const playAiApiKey = Deno.env.get('PLAYAI_API_KEY')
-    const playAiUserId = Deno.env.get('PLAYAI_USER_ID')
+    let requestBody;
+    let rawBody;
+    try {
+      rawBody = await req.text(); // Read raw body as text
+      console.log('Raw Request Body:', rawBody);
 
-    console.log('PlayAI API Key present:', !!playAiApiKey);
-    console.log('PlayAI User ID present:', !!playAiUserId);
-
-    if (!playAiApiKey || !playAiUserId) {
-      return new Response(
-        JSON.stringify({ error: 'PlayAI API key or User ID not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      if (contentType && contentType.includes('application/json')) {
+        if (rawBody) {
+          requestBody = JSON.parse(rawBody);
+        } else {
+          console.error('Received application/json with empty body.');
+          return new Response(JSON.stringify({ error: 'Empty JSON body' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      } else {
+        console.error('Unexpected Content-Type:', contentType);
+        return new Response(JSON.stringify({ error: `Unsupported Content-Type: ${contentType}` }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    } catch (e) {
+      console.error('Failed to parse request body as JSON:', e.message, e.stack);
+      return new Response(JSON.stringify({ error: `Invalid JSON in request body: ${e.message}. Raw body: ${rawBody}` }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    console.log('Making PlayAI API call for text:', text.substring(0, 50))
+    const { text, languageCode, voiceId } = requestBody;
 
-    const playAiResponse = await fetch('https://play.ht/api/v2/tts', {
+    if (!text) {
+      return new Response(JSON.stringify({ error: 'Text is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Replace with your actual SpeechifyAI API key, ideally from environment variables
+    const SPEECHIFY_API_KEY = Deno.env.get('SPEECHIFY_API_KEY');
+
+    if (!SPEECHIFY_API_KEY) {
+      return new Response(JSON.stringify({ error: 'SpeechifyAI API key not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const speechifyApiUrl = 'https://api.speechify.com/v1/text-to-speech/generate-audio';
+
+    const response = await fetch(speechifyApiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-User-ID': playAiUserId,
-        'Authorization': `Bearer ${playAiApiKey}`,
+        'Authorization': `Bearer ${SPEECHIFY_API_KEY}`,
       },
       body: JSON.stringify({
         text,
-        voice_id: voiceId,
-        output_format: 'mp3',
-        quality: 'medium',
-        voice_engine: 'PlayHT2.0',
+        languageCode,
+        voiceId,
       }),
     });
-    
-    console.log('DEBUG: playAiResponse object:', playAiResponse);
-    
-    // Defensive check
-    if (!playAiResponse) {
-      throw new Error('PlayAI API fetch returned an undefined response object.');
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`SpeechifyAI API error: ${response.status} - ${errorData.message || JSON.stringify(errorData)}`);
     }
 
-    console.log('PlayAI response status:', playAiResponse.status)
-
-    if (!playAiResponse.ok) {
-      const errorText = await playAiResponse.text();
-      console.error('PlayAI API Error:', errorText);
-      throw new Error(`PlayAI API request failed with status ${playAiResponse.status}: ${errorText}`);
-    }
-
-    // Check if response is actually audio or an error message
-    const contentType = playAiResponse.headers.get('content-type') || ''
-    console.log('Response content type:', contentType)
-    
-    if (!contentType.includes('audio') && !contentType.includes('mpeg')) {
-      const errorText = await playAiResponse.text()
-      console.error('PlayAI returned non-audio response:', errorText)
-      
-      // Common PlayAI error messages
-      if (errorText.includes('error')) {
-        throw new Error(`PlayAI API Error: ${errorText}`);
-      }
-      
-      throw new Error('PlayAI returned invalid response format');
-    }
-
-    const job = await playAiResponse.json();
-    const jobId = job.id;
-
-    // Poll for the result
-    let result = null;
-    while (true) {
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for 2 seconds
-      const jobResponse = await fetch(`https://api.play.ht/api/v2/tts/${jobId}`, {
-        headers: {
-          'Authorization': `Bearer ${playAiApiKey}`,
-          'X-User-ID': playAiUserId,
-          'accept': 'application/json'
-        }
-      });
-
-      result = await jobResponse.json();
-      if (result.output) {
-        break;
-      }
-    }
-
-    const audioUrl = result.output.url;
-    const audioResponse = await fetch(audioUrl);
-    const audioBuffer = await audioResponse.arrayBuffer();
-
-    console.log('Audio buffer size:', audioBuffer.byteLength);
-    
-    // Validate audio data size
-    if (audioBuffer.byteLength < 1000) {
-      throw new Error('Audio data too small - likely an API error');
-    }
-    
-    const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
+    const data = await response.json();
 
     return new Response(
-      JSON.stringify({ 
-        audioData: base64Audio,
-        contentType: 'audio/mpeg',
-        size: audioBuffer.byteLength
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-
+      JSON.stringify({ audioUrl: data.audioUrl, debug: { text, languageCode, voiceId } }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
-    console.error('Text-to-speech error:', error)
+    console.error('Edge Function error:', error.message, error.stack);
     return new Response(
-      JSON.stringify({ 
-        error: error.message || 'Text-to-speech failed',
-        details: 'Check PlayAI API key and service status'
+      JSON.stringify({
+        error: error.message || 'Edge Function encountered an error',
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    );
   }
-})
+});
