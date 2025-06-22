@@ -62,7 +62,7 @@ serve(async (req) => {
 
     if (!SPEECHIFY_API_KEY) {
       console.error('TTS: Speechify API key not configured');
-      return new Response(JSON.stringify({ error: 'Text-to-speech service not configured' }), {
+      return new Response(JSON.stringify({ error: 'Text-to-speech service not configured. Please add your Speechify API key.' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
