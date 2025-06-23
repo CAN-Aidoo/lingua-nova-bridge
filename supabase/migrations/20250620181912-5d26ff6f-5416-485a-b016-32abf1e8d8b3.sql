@@ -44,7 +44,7 @@ CREATE POLICY "Users can view their own translations"
   ON public.translations 
   FOR SELECT 
   USING (auth.uid() = user_id OR user_id IS NULL);
-
+`
 CREATE POLICY "Users can create translations" 
   ON public.translations 
   FOR INSERT 
