@@ -1,6 +1,6 @@
 # Project Tasks
 
-This document outlines the current tasks and future development plans for the Lingua Nova Bridge project. It is intended to provide a clear overview for all contributors.
+This document outlines the current tasks and future development plans for the LangVoice project. It is intended to provide a clear overview for all contributors.
 
 ## Current Tasks
 

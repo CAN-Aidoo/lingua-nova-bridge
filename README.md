@@ -1,6 +1,6 @@
-# Lingua Nova Bridge
+# LangVoice
 
-Lingua Nova Bridge is a voice-powered translation application built with React, Vite, and Supabase. It allows users to translate text and speech between different languages.
+LangVoice is a voice-powered translation application built with React, Vite, and Supabase. It allows users to translate text and speech between different languages.
 
 ## Table of Contents
 

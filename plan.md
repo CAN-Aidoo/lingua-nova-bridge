@@ -1,6 +1,5 @@
-# Project Plan: Lingua Nova Bridge
-
-This document outlines the high-level development plan and milestones for the Lingua Nova Bridge project. It serves as a guide for the development team to ensure a structured and efficient workflow.
+# Project Plan: LangVoice
+This document outlines the high-level development plan and milestones for the LangVoice project. It serves as a guide for the development team to ensure a structured and efficient workflow.
 
 ## Development Workflow
 
