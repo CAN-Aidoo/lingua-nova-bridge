@@ -13,148 +13,92 @@ serve(async (req) => {
 
   try {
     console.log('TTS Edge Function: Request received');
-    console.log('TTS: Request Method:', req.method);
-    console.log('TTS: Request URL:', req.url);
     
-    const requestHeaders = Object.fromEntries(req.headers.entries());
-    console.log('TTS: Request Headers:', requestHeaders);
+    const requestBody = await req.json();
+    console.log('TTS: Parsed Request Body:', requestBody);
 
-    const contentType = req.headers.get('content-type');
-    const contentLength = req.headers.get('content-length');
-
-    console.log('TTS: Content-Type:', contentType);
-    console.log('TTS: Content-Length:', contentLength);
-
-    // Read the request body
-    let requestBody;
-    let rawBody = '';
-    
-    try {
-      rawBody = await req.text();
-      console.log('TTS: Raw Request Body length:', rawBody.length);
-      console.log('TTS: Raw Request Body (first 500 chars):', rawBody.substring(0, 500));
-
-      if (!rawBody || rawBody.trim() === '') {
-        console.error('TTS: Empty request body received');
-        return new Response(JSON.stringify({ 
-          error: 'Empty request body. Please ensure you are sending text, languageCode, and voiceId parameters.' 
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      requestBody = JSON.parse(rawBody);
-      console.log('TTS: Parsed Request Body:', requestBody);
-    } catch (parseError) {
-      console.error('TTS: JSON parsing error:', parseError);
-      console.error('TTS: Raw body that failed to parse:', rawBody);
-      return new Response(JSON.stringify({ 
-        error: `Invalid JSON in request body: ${parseError.message}. Raw body: ${rawBody}` 
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const { text, languageCode, voiceId } = requestBody;
+    const { text, languageCode } = requestBody;
 
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
       console.error('TTS: Missing or invalid text parameter:', text);
       return new Response(JSON.stringify({ 
-        error: 'Text parameter is required and must be a non-empty string',
-        received: { text, type: typeof text }
+        error: 'Text parameter is required and must be a non-empty string'
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Get the Speechify API key from environment
-    const SPEECHIFY_API_KEY = Deno.env.get('SPEECHIFY_API_KEY');
+    // Get the ElevenLabs API key from environment
+    const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
 
-    if (!SPEECHIFY_API_KEY) {
-      console.error('TTS: Speechify API key not configured');
+    if (!ELEVENLABS_API_KEY) {
+      console.error('TTS: ElevenLabs API key not configured');
       return new Response(JSON.stringify({ 
-        error: 'Text-to-speech service not configured. Please add your Speechify API key in the Supabase secrets.' 
+        error: 'Text-to-speech service not configured. Please add your ElevenLabs API key in the Supabase secrets.' 
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('TTS: Making request to Speechify API');
-    console.log('TTS: Request parameters:', {
-      text: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
-      languageCode: languageCode || 'en',
-      voiceId: voiceId ? voiceId.substring(0, 80) + '...' : 'default'
-    });
-
-    const speechifyApiUrl = 'https://api.speechify.com/v1/text-to-speech/generate-audio';
-    const speechifyPayload = {
+    console.log('TTS: Making request to ElevenLabs API');
+    
+    // Use a default voice (Alice)
+    const voiceId = 'Xb7hH8MSUJpSbSDYk0k2'; // Alice voice
+    const elevenlabsUrl = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
+    
+    const elevenlabsPayload = {
       text: text.trim(),
-      languageCode: languageCode || 'en',
-      voiceId: voiceId || 's3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b046-324a1749103b/alice/manifest.json',
+      model_id: "eleven_multilingual_v2",
+      voice_settings: {
+        stability: 0.5,
+        similarity_boost: 0.5
+      }
     };
 
-    console.log('TTS: Speechify API payload:', speechifyPayload);
+    console.log('TTS: ElevenLabs API payload:', elevenlabsPayload);
 
-    const response = await fetch(speechifyApiUrl, {
+    const response = await fetch(elevenlabsUrl, {
       method: 'POST',
       headers: {
+        'Accept': 'audio/mpeg',
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${SPEECHIFY_API_KEY}`,
+        'xi-api-key': ELEVENLABS_API_KEY,
       },
-      body: JSON.stringify(speechifyPayload),
+      body: JSON.stringify(elevenlabsPayload),
     });
 
-    console.log('TTS: Speechify API response status:', response.status);
-    console.log('TTS: Speechify API response headers:', Object.fromEntries(response.headers.entries()));
+    console.log('TTS: ElevenLabs API response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('TTS: Speechify API error response:', errorText);
-      
-      let errorData;
-      try {
-        errorData = JSON.parse(errorText);
-      } catch {
-        errorData = { message: errorText || 'Unknown API error' };
-      }
+      console.error('TTS: ElevenLabs API error response:', errorText);
       
       return new Response(JSON.stringify({
-        error: `Speechify API error (${response.status}): ${errorData.message || JSON.stringify(errorData)}`,
-        details: errorData
+        error: `ElevenLabs API error (${response.status}): ${errorText}`,
       }), {
         status: response.status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const data = await response.json();
-    console.log('TTS: Speechify API success response keys:', Object.keys(data));
+    // Get the audio data as arrayBuffer
+    const audioBuffer = await response.arrayBuffer();
+    console.log('TTS: Audio buffer size:', audioBuffer.byteLength);
 
-    if (!data.audioUrl) {
-      console.error('TTS: No audioUrl in Speechify response:', data);
-      return new Response(JSON.stringify({
-        error: 'No audio URL received from Speechify API',
-        speechifyResponse: data
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Convert to base64 for easier handling in the frontend
+    const audioArray = new Uint8Array(audioBuffer);
+    const audioBase64 = btoa(String.fromCharCode.apply(null, Array.from(audioArray)));
 
-    console.log('TTS: Returning successful response with audioUrl');
+    // Create a data URL for immediate playback
+    const audioUrl = `data:audio/mpeg;base64,${audioBase64}`;
+
+    console.log('TTS: Returning successful response');
     return new Response(
       JSON.stringify({ 
-        audioUrl: data.audioUrl,
-        success: true,
-        debug: { 
-          textLength: text.length,
-          languageCode: languageCode || 'en', 
-          hasVoiceId: !!voiceId
-        } 
+        audioUrl: audioUrl,
+        success: true
       }),
       { 
         status: 200, 

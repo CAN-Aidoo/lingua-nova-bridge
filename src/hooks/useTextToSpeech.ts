@@ -9,8 +9,8 @@ export const useTextToSpeech = () => {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const { toast } = useToast();
 
-  const speak = useCallback(async (text: string, languageCode?: string, voiceId?: string) => {
-    console.log('TTS: Starting text-to-speech with:', { text, languageCode, voiceId });
+  const speak = useCallback(async (text: string, languageCode?: string) => {
+    console.log('TTS: Starting text-to-speech with:', { text, languageCode });
     setIsSpeaking(true);
     setError(null);
     
@@ -22,8 +22,7 @@ export const useTextToSpeech = () => {
       // Prepare the request payload
       const payload = {
         text: text.trim(),
-        languageCode: languageCode || 'en',
-        voiceId: voiceId || 's3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b046-324a1749103b/alice/manifest.json'
+        languageCode: languageCode || 'en'
       };
 
       console.log('TTS: Sending request with payload:', payload);
@@ -49,7 +48,7 @@ export const useTextToSpeech = () => {
       }
 
       if (data.audioUrl) {
-        console.log('TTS: Playing audio from URL:', data.audioUrl);
+        console.log('TTS: Playing audio from data URL');
         const audio = new Audio(data.audioUrl);
         
         await new Promise((resolve, reject) => {
@@ -63,6 +62,7 @@ export const useTextToSpeech = () => {
           };
           audio.onended = () => {
             console.log('TTS: Audio playback completed');
+            setIsSpeaking(false);
           };
         });
 

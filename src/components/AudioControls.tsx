@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -129,8 +128,8 @@ const AudioControls: React.FC<AudioControlsProps> = ({
       onPlayAudio();
     }
     console.log('Text being sent to speak function:', text);
-    // Call the speak function from the hook
-    speak(text, language.code, 's3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b046-324a1749103b/alice/manifest.json');
+    // Call the speak function from the hook with simplified parameters
+    speak(text, language.code);
   };
 
   const handleDownloadClick = () => {
