@@ -1,10 +1,10 @@
+
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Language } from '../types/language';
 import { useToast } from '../hooks/use-toast';
-import { useTextToSpeech } from '../hooks/useTextToSpeech';
 
 interface AudioControlsProps {
   language: Language;
@@ -32,7 +32,6 @@ const AudioControls: React.FC<AudioControlsProps> = ({
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const { toast } = useToast();
   const recordedChunks = useRef<Blob[]>([]);
-  const { speak, audioBlob } = useTextToSpeech();
 
   const startRecording = async () => {
     try {
@@ -124,43 +123,9 @@ const AudioControls: React.FC<AudioControlsProps> = ({
       return;
     }
 
+    // Only call the parent's onPlayAudio function, don't duplicate TTS calls
     if (onPlayAudio) {
       onPlayAudio();
-    }
-    console.log('Text being sent to speak function:', text);
-    // Call the speak function from the hook with simplified parameters
-    speak(text, language.code);
-  };
-
-  const handleDownloadClick = () => {
-    if (!text) {
-      toast({
-        title: "No text to download",
-        description: "There's no text to convert to audio for download",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (audioBlob) {
-      const url = URL.createObjectURL(audioBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `lingua-nova-audio-${Date.now()}.mp3`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast({
-        title: "Download started",
-        description: "Your audio file is being downloaded.",
-      });
-    } else {
-      toast({
-        title: "No audio to download",
-        description: "Please generate audio first before attempting to download.",
-        variant: "destructive",
-      });
     }
   };
 
